@@ -1,0 +1,182 @@
+name: "sugar-dynamic"
+tag: "${data.random_camera.height}_${rmspace:${basename:${data.video_frames_dir}}_${system.geometry.dynamic_mode},_}"
+exp_root_dir: "outputs"
+seed: 0
+
+data_type: "temporal-image-datamodule"
+data: # threestudio/data/image.py -> SingleImageDataModuleConfig
+  video_frames_dir: ???
+  video_length: 32
+  norm_timestamp: true
+  num_frames: 4
+  height: 512 
+  width: 512 
+  resolution_milestones: [100]
+  default_elevation_deg: 5.0
+  default_azimuth_deg: 0.0
+  default_camera_distance: 3.8
+  default_fovy_deg: 20.0
+  requires_depth: ${cmaxgt0orcmaxgt0:${system.loss.lambda_depth},${system.loss.lambda_depth_rel}}
+  requires_normal: ${cmaxgt0:${system.loss.lambda_normal}}
+  random_camera: # threestudio/data/uncond.py -> RandomCameraDataModuleConfig
+    height: 512 
+    width: 512 
+    batch_size: 1
+    eval_height: 512
+    eval_width: 512
+    eval_batch_size: 1
+    elevation_range: [-10, 80]
+    azimuth_range: [-180, 180]
+    camera_distance_range: [3.8, 3.8]
+    fovy_range: [20.0, 20.0] # Zero123 has fixed fovy
+    progressive_until: 0
+    camera_perturb: 0.0
+    center_perturb: 0.0
+    up_perturb: 0.0
+    light_position_perturb: 1.0
+    light_distance_range: [7.5, 10.0]
+    eval_elevation_deg: ${data.default_elevation_deg}
+    eval_camera_distance: ${data.default_camera_distance}
+    eval_fovy_deg: ${data.default_fovy_deg}
+    light_sample_strategy: "dreamfusion"
+    batch_uniform_azimuth: false
+    n_val_views: 5
+    n_test_views: 5
+    rays_d_normalize: false
+
+system_type: "sugar-4dgen-system"
+system:
+  stage: motion
+  # num of frames between two adjacent timestamps for 2d diffusion guidance
+  num_inter_frames: 10
+  length_inter_frames: 0.1
+
+  geometry_type: "dynamic-sugar"
+  geometry:
+    # num of control knots per points(vertices/deformation nodes)
+    num_frames: 32 # 50
+    use_deform_graph: true
+    dynamic_mode: deformation # (deformation / discrete)
+
+    n_dg_nodes: 1000
+    dg_node_connectivity: 4
+    # for discrete dynamic mode
+    dg_trans_lr: 0.002
+    dg_rot_lr: 0.001
+    dg_scale_lr: 0.001
+
+    vert_trans_lr: 0.001
+    vert_rot_lr: 0.001
+    vert_scale_lr: 0.001
+
+    # for deformation dynamic mode
+    deformation_lr: 0.00032
+    grid_lr: 0.0032 
+
+    # dynamic attr
+    d_scale: false
+
+    spatial_extent: ${data.default_camera_distance}
+    spatial_lr_scale: 1
+
+    surface_mesh_to_bind_path: ""
+    n_gaussians_per_surface_triangle: 6
+
+    dist_mode: "geodisc" # (eucdisc / geodisc)
+    skinning_method: "hybrid"
+
+  exporter_type: "gaussian-mesh-exporter"
+  renderer_type: "diff-sugar-rasterizer-temporal"
+  renderer:
+    debug: false
+    invert_bg_prob: 1.0
+
+  material_type: "no-material" # unused
+  material:
+    n_output_dims: 0
+
+  background_type: "solid-color-background" # unused
+
+  prompt_processor_type: "dummy-prompt-processor" # Zero123 doesn't use prompts
+  prompt_processor:
+    pretrained_model_name_or_path: ""
+    prompt: ""
+
+  guidance_zero123_type: "temporal-stable-zero123-guidance"
+  guidance_zero123:
+    num_frames: ${data.video_length}
+    pretrained_config: "./load/zero123/sd-objaverse-finetune-c_concat-256.yaml"
+    pretrained_model_name_or_path: ???
+    vram_O: ${not:${gt0:${system.freq.guidance_eval}}}
+    cond_video_dir: ${data.video_frames_dir}
+    cond_elevation_deg: ${data.default_elevation_deg}
+    cond_azimuth_deg: ${data.default_azimuth_deg}
+    cond_camera_distance: ${data.default_camera_distance}
+    guidance_scale: 3.0
+    min_step_percent: 0.02  # (start_iter, start_val, end_val, end_iter)
+    max_step_percent: 0.5
+    chunk_size: null
+
+  prompt_processor_3d_type: null
+  guidance_3d_type: null
+
+  freq:
+    ref_only_steps: 0
+    guidance_eval: 0
+    inter_frame_reg: 0
+    milestone_arap_reg: 100
+
+  loggers:
+    wandb:
+      enable: false
+      project: "threestudio"
+      name: None
+
+  loss:
+    lambda_sds_zero123: 0.1
+    lambda_sds_2d: 0
+    lambda_sds_2d_img: 0.
+    lambda_sds_vid: 0
+    lambda_rgb: 5000. 
+    lambda_mask: [200, 500., 5000., 1000]
+    lambda_depth: 0.
+    lambda_depth_rel: 0. 
+    lambda_normal: 0.
+    lambda_normal_smooth: 0.
+    lambda_normal_consistency: 100. 
+    lambda_normal_depth_consistency: 1. 
+    lambda_laplacian_smoothing: 0.
+    lambda_arap_reg_key_frame: 10.
+    lambda_arap_reg_inter_frame: 10.
+    lambda_ref_xyz: 0
+    # tv losses
+    lambda_rgb_tv: 0.
+    lambda_depth_tv: 0. 
+    lambda_normal_tv: 0.
+    
+    # object centric reg
+    lambda_obj_centric: 0.
+
+
+  optimizer:
+    name: Adam
+    args:
+      lr: 0.01
+      betas: [0.9, 0.99]
+      eps: 1.e-8
+    params:
+      background:
+        lr: 0.001
+
+trainer:
+  max_steps: 2000
+  log_every_n_steps: 1
+  num_sanity_val_steps: 0
+  val_check_interval: 1000
+  enable_progress_bar: true
+  precision: 32
+
+checkpoint:
+  save_last: true
+  save_top_k: -1
+  every_n_train_steps: 100
