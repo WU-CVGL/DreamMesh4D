@@ -194,7 +194,7 @@ class DiffSuGaR(Rasterizer, GaussianBatchRenderer):
             cov3D_precomp=cov3D_precomp,
         )
         normal = F.normalize(normal, dim=0)
-        normal = - normal # the mesh extracted by sugar has inward-pointing normals
+        # normal = - normal # the mesh extracted by sugar has inward-pointing normals
         normal_map = normal * 0.5 * rendered_alpha + 0.5
         mask = rendered_alpha > 0.99
         normal_mask = mask.repeat(3, 1, 1)

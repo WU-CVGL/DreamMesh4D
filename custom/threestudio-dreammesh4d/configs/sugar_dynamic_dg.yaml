@@ -144,7 +144,7 @@ system:
     lambda_normal: 0.
     lambda_normal_smooth: 0.
     lambda_normal_consistency: 100. 
-    lambda_normal_depth_consistency: 1. 
+    lambda_normal_depth_consistency: 0. 
     lambda_laplacian_smoothing: 0.
     lambda_arap_reg_key_frame: 10.
     lambda_arap_reg_inter_frame: 10.

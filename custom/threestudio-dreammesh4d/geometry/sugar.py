@@ -182,9 +182,9 @@ class SuGaRModel(BaseGeometry):
         vert_colors = np.array(o3d_mesh.vertex_colors)
         if len(vert_colors) == 0:
             vert_colors = np.ones_like(verts) * 0.5
-        # verts, faces, vert_colors = self.prune_isolated_points(
-        #     verts, faces, vert_colors
-        # )
+        verts, faces, vert_colors = self.prune_isolated_points(
+            verts, faces, vert_colors
+        )
         self.register_buffer(
             "_surface_mesh_faces", torch.as_tensor(faces, device=self.device)
         )
@@ -519,7 +519,7 @@ class SuGaRModel(BaseGeometry):
 
     @property
     def get_face_normals(self) -> Float[Tensor, "N_faces 3"]:
-        return - F.normalize(self.surface_mesh.faces_normals_list()[0], dim=-1)
+        return F.normalize(self.surface_mesh.faces_normals_list()[0], dim=-1)
 
     @property
     def get_gs_normals(self) -> Float[Tensor, "N_gs 3"]:
