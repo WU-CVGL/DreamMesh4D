@@ -85,7 +85,7 @@ python launch.py --config custom/threestudio-dreammesh4d/configs/sugar_static_re
 #### 2.2 Dynamic stage
 Run dynamic stage:
 ```
-python launch.py --config custom/threestudio-dreammesh4d/configs/sugar_dynamic_dg.yaml --train data.video_frames_dir=path/to/video system.data.video_length=video_frame_num system.geometry.surface_mesh_to_bind_path=path/to/refine/mesh system.weights=path/to/trial/dir/ckpts/last.ckpt 
+python launch.py --config custom/threestudio-dreammesh4d/configs/sugar_dynamic_dg.yaml --train data.video_frames_dir=path/to/video system.geometry.num_frames=video_frame_num system.geometry.surface_mesh_to_bind_path=path/to/refine/mesh system.weights=path/to/trial/dir/ckpts/last.ckpt 
 ```
 
 Then the deformed mesh under each timestamp can be exported with:
