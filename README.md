@@ -105,7 +105,7 @@ This project is built upon the awesome project [threestudio](https://github.com/
 
 
 ## 📌Citation
-If you find our paper and code useful in your research, please consider giving a star and citation.
+If you find our paper and code useful in your research, please consider giving a star and citation. 
 
 ```
 @inproceedings{li2024dreammesh4d,
